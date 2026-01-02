@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       try {
         await recordWebhookRequest(monitor, request, clientIp, null, 'rejected', 'Rate limit exceeded')
       } catch (monitoringError) {
-        webhookLogger.warn('Failed to record rate-limited webhook', monitoringError as Error)
+        webhookLogger.warn('Failed to record rate-limited webhook', { error: String(monitoringError) })
       }
       
       return NextResponse.json(
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       try {
         await recordWebhookRequest(monitor, request, clientIp, null, 'rejected', 'Missing signature')
       } catch (monitoringError) {
-        webhookLogger.warn('Failed to record rejected webhook', monitoringError as Error)
+        webhookLogger.warn('Failed to record rejected webhook', { error: String(monitoringError) })
       }
       
       return NextResponse.json(
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       try {
         await recordWebhookRequest(monitor, request, clientIp, rawBody, 'rejected', 'Invalid signature')
       } catch (monitoringError) {
-        webhookLogger.warn('Failed to record rejected webhook', monitoringError as Error)
+        webhookLogger.warn('Failed to record rejected webhook', { error: String(monitoringError) })
       }
       
       return NextResponse.json(
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       try {
         await recordWebhookRequest(monitor, request, clientIp, rawBody, 'failed', 'Invalid JSON payload')
       } catch (monitoringError) {
-        webhookLogger.warn('Failed to record failed webhook', monitoringError as Error)
+        webhookLogger.warn('Failed to record failed webhook', { error: String(monitoringError) })
       }
       
       return NextResponse.json(
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
       webhookId = webhook.id
     } catch (monitoringError) {
       // Don't fail webhook processing if monitoring fails
-      webhookLogger.warn('Failed to record webhook request for monitoring', monitoringError as Error)
+      webhookLogger.warn('Failed to record webhook request for monitoring', { error: String(monitoringError) })
     }
 
     // Track processing stage: received → enriching
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
         await trackProcessingStage(monitor, webhookId, 'received', 'Processing webhook request')
       }
     } catch (monitoringError) {
-      webhookLogger.warn('Failed to track received stage', monitoringError as Error)
+      webhookLogger.warn('Failed to track received stage', { error: String(monitoringError) })
     }
 
     // Parse and validate webhook payload (Requirement 1.3)
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
           await updateWebhookStatus(monitor, webhookId, 'failed', 'Invalid payload structure')
         }
       } catch (monitoringError) {
-        webhookLogger.warn('Failed to update webhook status', monitoringError as Error)
+        webhookLogger.warn('Failed to update webhook status', { error: String(monitoringError) })
       }
       
       return NextResponse.json(
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
         await trackProcessingStage(monitor, webhookId, 'enriching', 'Enriching signal data')
       }
     } catch (monitoringError) {
-      webhookLogger.warn('Failed to track enriching stage', monitoringError as Error)
+      webhookLogger.warn('Failed to track enriching stage', { error: String(monitoringError) })
     }
 
     // Store signal in database (Requirement 1.1)
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
         await updateWebhookWithSignal(monitor, webhookId, signalId)
       }
     } catch (monitoringError) {
-      webhookLogger.warn('Failed to update webhook with signal ID', monitoringError as Error)
+      webhookLogger.warn('Failed to update webhook with signal ID', { error: String(monitoringError) })
     }
 
     // Track processing stage: decided → executed
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
         await trackProcessingStage(monitor, webhookId, 'deciding', 'Making trading decision', { signalId })
       }
     } catch (monitoringError) {
-      webhookLogger.warn('Failed to track deciding stage', monitoringError as Error)
+      webhookLogger.warn('Failed to track deciding stage', { error: String(monitoringError) })
     }
 
     // Broadcast signal received event in real-time
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
         await trackProcessingStage(monitor, webhookId, 'executing', 'Queuing signal for processing')
       }
     } catch (monitoringError) {
-      webhookLogger.warn('Failed to track executing stage', monitoringError as Error)
+      webhookLogger.warn('Failed to track executing stage', { error: String(monitoringError) })
     }
 
     const processingTime = Date.now() - startTime
@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
         await trackProcessingStage(monitor, webhookId, 'completed', 'Webhook processing completed')
       }
     } catch (monitoringError) {
-      webhookLogger.warn('Failed to update final webhook status', monitoringError as Error)
+      webhookLogger.warn('Failed to update final webhook status', { error: String(monitoringError) })
     }
     
     webhookLogger.info('Signal received and queued', {
@@ -290,15 +290,15 @@ export async function POST(request: NextRequest) {
           webhookId, 
           processingTime, 
           'failed', 
-          (error as Error).message,
-          (error as Error).stack
+          error instanceof Error ? error.message : String(error),
+          error instanceof Error ? error.stack : undefined
         )
         await trackProcessingStage(monitor, webhookId, 'failed', 'Webhook processing failed', {
-          error: (error as Error).message
+          error: error instanceof Error ? error.message : String(error)
         })
       }
     } catch (monitoringError) {
-      webhookLogger.warn('Failed to update webhook error status', monitoringError as Error)
+      webhookLogger.warn('Failed to update webhook error status', { error: String(monitoringError) })
     }
     
     webhookLogger.error('Error processing webhook', error as Error, {
