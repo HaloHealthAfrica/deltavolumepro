@@ -134,6 +134,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Record webhook request immediately upon receipt (Monitoring Integration)
+    // Note: recordWebhookRequest may return null if monitoring fails
     try {
       const webhook = await recordWebhookRequest(monitor, request, clientIp, webhookData, 'success')
       if (webhook) {
