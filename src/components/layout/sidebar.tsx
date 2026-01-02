@@ -9,6 +9,7 @@ const navigation = [
   { name: 'Live Signals', href: '/signals', icon: '📡' },
   { name: 'Positions', href: '/positions', icon: '💼' },
   { name: 'Trade History', href: '/history', icon: '📜' },
+  { name: 'Monitoring', href: '/monitoring', icon: '🔍' },
   { name: 'Settings', href: '/settings', icon: '⚙️' },
 ]
 

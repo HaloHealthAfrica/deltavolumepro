@@ -8,6 +8,9 @@ export * from './trading';
 // Export all API response types
 export * from './api';
 
+// Export all monitoring types
+export * from './monitoring';
+
 // Export all options trading types (excluding StrikeSelection to avoid conflict with trading.ts)
 export type {
   Greeks,

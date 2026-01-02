@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -18,21 +18,21 @@ enum UserRole {
 
 // User model for authentication and user management
 model User {
-  id            String    @id @default(cuid())
-  clerkId       String    @unique
-  email         String    @unique
-  name          String?
-  imageUrl      String?
-  role          UserRole  @default(USER)
-  isActive      Boolean   @default(true)
-  lastSignInAt  DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  id           String    @id @default(cuid())
+  clerkId      String    @unique
+  email        String    @unique
+  name         String?
+  imageUrl     String?
+  role         UserRole  @default(USER)
+  isActive     Boolean   @default(true)
+  lastSignInAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
   // Relations to trading data
-  signals       Signal[]
-  trades        Trade[]
-  
+  signals Signal[]
+  trades  Trade[]
+
   // Performance indexes
   @@index([clerkId])
   @@index([email])
@@ -42,55 +42,57 @@ model User {
 }
 
 model Signal {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
   // User association (optional for backward compatibility)
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   // Raw signal data
-  rawPayload      Json
-  action          String
-  ticker          String
-  timestamp       BigInt
+  rawPayload       Json
+  action           String
+  ticker           String
+  timestamp        BigInt
   timeframeMinutes Int
-  entryPrice      Float
-  quality         Int
-  
+  entryPrice       Float
+  quality          Int
+
   // Volume data
-  zScore          Float
-  buyPercent      Float
-  sellPercent     Float
-  buyersWinning   Boolean
-  
+  zScore        Float
+  buyPercent    Float
+  sellPercent   Float
+  buyersWinning Boolean
+
   // Structure data
-  trend           String
-  vwapPosition    String
-  atAtrLevel      Boolean
-  
+  trend        String
+  vwapPosition String
+  atAtrLevel   Boolean
+
   // Oscillator data
-  oscillatorValue Float
-  oscillatorPhase String
-  compression     Boolean
+  oscillatorValue     Float
+  oscillatorPhase     String
+  compression         Boolean
   leavingAccumulation Boolean @default(false)
-  leavingExtremeDown Boolean @default(false)
+  leavingExtremeDown  Boolean @default(false)
   leavingDistribution Boolean @default(false)
-  leavingExtremeUp Boolean @default(false)
-  
+  leavingExtremeUp    Boolean @default(false)
+
   // Suggested levels
-  stopLoss        Float
-  target1         Float
-  atr             Float
-  
+  stopLoss Float
+  target1  Float
+  atr      Float
+
   // Processing status
-  status          String   // 'received', 'processing', 'enriched', 'traded', 'rejected'
-  
+  status String // 'received', 'processing', 'enriched', 'traded', 'rejected'
+
   // Relations
-  enrichedData    EnrichedData?
-  decision        Decision?
-  trades          Trade[]
-  
+  enrichedData     EnrichedData?
+  decision         Decision?
+  trades           Trade[]
+  webhookLogs      WebhookLog[]
+  processingStages ProcessingStage[]
+
   // Performance indexes
   @@index([status])
   @@index([ticker])
@@ -104,21 +106,21 @@ model Signal {
 }
 
 model EnrichedData {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  signalId        String   @unique
-  signal          Signal   @relation(fields: [signalId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  signalId  String   @unique
+  signal    Signal   @relation(fields: [signalId], references: [id], onDelete: Cascade)
+
   // Data from all sources (stored as complete objects)
-  tradierData     Json     // Complete Tradier response
-  twelveData      Json     // Complete TwelveData response
-  alpacaData      Json     // Complete Alpaca response
-  
+  tradierData Json // Complete Tradier response
+  twelveData  Json // Complete TwelveData response
+  alpacaData  Json // Complete Alpaca response
+
   // Aggregated analysis
-  aggregatedData  Json     // Combined insights
-  dataQuality     Float    // 0-1 score of data completeness
-  enrichedAt      BigInt      // Timestamp when enriched
-  
+  aggregatedData Json // Combined insights
+  dataQuality    Float // 0-1 score of data completeness
+  enrichedAt     BigInt // Timestamp when enriched
+
   // Performance indexes
   @@index([signalId])
   @@index([createdAt])
@@ -126,33 +128,33 @@ model EnrichedData {
 }
 
 model Decision {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  signalId        String   @unique
-  signal          Signal   @relation(fields: [signalId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  signalId  String   @unique
+  signal    Signal   @relation(fields: [signalId], references: [id], onDelete: Cascade)
+
   // Decision outcome
-  decision        String   // 'TRADE', 'REJECT', 'WAIT'
-  confidence      Float    // 0-1 confidence score
-  reasoning       Json     // Detailed reasoning for decision
-  
+  decision   String // 'TRADE', 'REJECT', 'WAIT'
+  confidence Float // 0-1 confidence score
+  reasoning  Json // Detailed reasoning for decision
+
   // Trade parameters (if decision = 'TRADE')
-  instrumentType  String?  // 'STOCK', 'CALL', 'PUT', 'SPREAD'
-  strikes         Json?    // Selected strike prices
-  expiration      DateTime?
-  quantity        Int?
-  positionSize    Float?   // Dollar amount
-  riskAmount      Float?   // Max risk in dollars
-  
+  instrumentType String? // 'STOCK', 'CALL', 'PUT', 'SPREAD'
+  strikes        Json? // Selected strike prices
+  expiration     DateTime?
+  quantity       Int?
+  positionSize   Float? // Dollar amount
+  riskAmount     Float? // Max risk in dollars
+
   // Risk metrics
   expectedReturn  Float?
   riskRewardRatio Float?
   winProbability  Float?
-  
+
   // Model weights used
-  modelVersion    String
-  weights         Json     // Feature weights used
-  
+  modelVersion String
+  weights      Json // Feature weights used
+
   // Performance indexes
   @@index([signalId])
   @@index([decision])
@@ -162,62 +164,62 @@ model Decision {
 }
 
 model Trade {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  signalId        String
-  signal          Signal   @relation(fields: [signalId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  signalId  String
+  signal    Signal   @relation(fields: [signalId], references: [id], onDelete: Cascade)
+
   // User association (optional for backward compatibility)
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   // Trade identification
-  tradeId         String   @unique // Generated trade ID
-  broker          String   // 'tradier', 'twelvedata', 'alpaca'
-  
+  tradeId String @unique // Generated trade ID
+  broker  String // 'tradier', 'twelvedata', 'alpaca'
+
   // Entry details
-  enteredAt       DateTime
-  instrumentType  String
-  ticker          String
-  strikes         Json?    // For options
-  expiration      DateTime?
-  side            String   // 'LONG', 'SHORT'
-  quantity        Int
-  entryPrice      Float
-  entryValue      Float    // Total position value
-  
+  enteredAt      DateTime
+  instrumentType String
+  ticker         String
+  strikes        Json? // For options
+  expiration     DateTime?
+  side           String // 'LONG', 'SHORT'
+  quantity       Int
+  entryPrice     Float
+  entryValue     Float // Total position value
+
   // Risk management
-  stopLoss        Float
-  target1         Float
-  target2         Float?
-  trailing        Boolean  @default(false)
-  
+  stopLoss Float
+  target1  Float
+  target2  Float?
+  trailing Boolean @default(false)
+
   // Exit details
-  exitedAt        DateTime?
-  exitPrice       Float?
-  exitValue       Float?
-  exitReason      String?  // 'TARGET_1', 'TARGET_2', 'STOP_LOSS', 'TRAILING', 'MANUAL'
-  
+  exitedAt   DateTime?
+  exitPrice  Float?
+  exitValue  Float?
+  exitReason String? // 'TARGET_1', 'TARGET_2', 'STOP_LOSS', 'TRAILING', 'MANUAL'
+
   // Performance
-  pnl             Float?
-  pnlPercent      Float?
-  rMultiple       Float?   // Actual return / risk
-  holdingPeriod   Int?     // Minutes
-  
+  pnl           Float?
+  pnlPercent    Float?
+  rMultiple     Float? // Actual return / risk
+  holdingPeriod Int? // Minutes
+
   // Status
-  status          String   // 'OPEN', 'CLOSED', 'CANCELLED'
-  
+  status String // 'OPEN', 'CLOSED', 'CANCELLED'
+
   // Paper trading broker responses
-  brokerData      Json     // Raw broker response
-  
+  brokerData Json // Raw broker response
+
   // Learning data
-  analysis        TradeAnalysis?
-  
+  analysis TradeAnalysis?
+
   // Options trading relations
-  optionsPosition OptionsPosition?
-  selectionRecord StrikeSelectionRecord?
+  optionsPosition     OptionsPosition?
+  selectionRecord     StrikeSelectionRecord?
   performanceAnalysis PerformanceAnalysis?
-  
+
   // Performance indexes
   @@index([signalId])
   @@index([tradeId])
@@ -232,29 +234,29 @@ model Trade {
 }
 
 model TradeAnalysis {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  tradeId         String   @unique
-  trade           Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  tradeId   String   @unique
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
   // What went right/wrong
-  outcome         String   // 'WIN', 'LOSS', 'BREAKEVEN'
-  vsExpectation   Float    // Actual vs expected performance
-  
+  outcome       String // 'WIN', 'LOSS', 'BREAKEVEN'
+  vsExpectation Float // Actual vs expected performance
+
   // Feature importance
-  signalQuality   Float    // How important was signal quality
-  volumePressure  Float    // How important was volume
-  oscillatorPhase Float    // How important was phase
-  marketCondition Float    // How important was market context
-  
+  signalQuality   Float // How important was signal quality
+  volumePressure  Float // How important was volume
+  oscillatorPhase Float // How important was phase
+  marketCondition Float // How important was market context
+
   // Lessons learned
-  insights        Json     // Generated insights
-  improvements    Json     // Suggested improvements
-  
+  insights     Json // Generated insights
+  improvements Json // Suggested improvements
+
   // Applied to model
-  appliedToModel  Boolean  @default(false)
-  appliedAt       DateTime?
-  
+  appliedToModel Boolean   @default(false)
+  appliedAt      DateTime?
+
   // Performance indexes
   @@index([tradeId])
   @@index([outcome])
@@ -264,43 +266,43 @@ model TradeAnalysis {
 }
 
 model TradingRules {
-  id              String   @id @default(cuid())
-  version         String   @unique
-  createdAt       DateTime @default(now())
-  isActive        Boolean  @default(false)
-  
+  id        String   @id @default(cuid())
+  version   String   @unique
+  createdAt DateTime @default(now())
+  isActive  Boolean  @default(false)
+
   // Rule weights
-  qualityWeight   Float    @default(0.25)
-  volumeWeight    Float    @default(0.20)
-  oscillatorWeight Float   @default(0.20)
-  structureWeight Float    @default(0.20)
-  marketWeight    Float    @default(0.15)
-  
+  qualityWeight    Float @default(0.25)
+  volumeWeight     Float @default(0.20)
+  oscillatorWeight Float @default(0.20)
+  structureWeight  Float @default(0.20)
+  marketWeight     Float @default(0.15)
+
   // Thresholds
-  minQuality      Int      @default(4)
-  minConfidence   Float    @default(0.65)
-  minVolumePressure Float  @default(60.0)
-  maxRiskPercent  Float    @default(2.0)
-  
+  minQuality        Int   @default(4)
+  minConfidence     Float @default(0.65)
+  minVolumePressure Float @default(60.0)
+  maxRiskPercent    Float @default(2.0)
+
   // Position sizing rules
-  baseSizePerQuality Json  // {1: 0, 2: 0, 3: 50, 4: 100, 5: 150}
+  baseSizePerQuality    Json // {1: 0, 2: 0, 3: 50, 4: 100, 5: 150}
   compressionMultiplier Float @default(0.5)
-  
+
   // Filters
-  allowedTimeframes Json   // [5, 15, 30, 60]
-  allowedTickers   Json?   // ['SPY', 'QQQ', etc] or null for all
-  tradingHours     Json    // {start: '09:30', end: '16:00'}
-  
+  allowedTimeframes Json // [5, 15, 30, 60]
+  allowedTickers    Json? // ['SPY', 'QQQ', etc] or null for all
+  tradingHours      Json // {start: '09:30', end: '16:00'}
+
   // Performance tracking
-  tradesExecuted   Int      @default(0)
-  winRate          Float?
-  avgReturn        Float?
-  sharpeRatio      Float?
-  
+  tradesExecuted Int    @default(0)
+  winRate        Float?
+  avgReturn      Float?
+  sharpeRatio    Float?
+
   // Learning metadata
-  learningData     Json     // ML model data
-  backtestResults  Json?    // Historical performance
-  
+  learningData    Json // ML model data
+  backtestResults Json? // Historical performance
+
   // Performance indexes
   @@index([version])
   @@index([isActive])
@@ -309,22 +311,22 @@ model TradingRules {
 }
 
 model MarketContext {
-  id              String   @id @default(cuid())
-  timestamp       DateTime @unique
-  
+  id        String   @id @default(cuid())
+  timestamp DateTime @unique
+
   // Broad market
-  spyPrice        Float
-  spyChange       Float
-  vixLevel        Float
-  
+  spyPrice  Float
+  spyChange Float
+  vixLevel  Float
+
   // Market regime
-  regime          String   // 'BULL', 'BEAR', 'NEUTRAL', 'VOLATILE'
-  volumeProfile   String   // 'HIGH', 'NORMAL', 'LOW'
-  
+  regime        String // 'BULL', 'BEAR', 'NEUTRAL', 'VOLATILE'
+  volumeProfile String // 'HIGH', 'NORMAL', 'LOW'
+
   // Sector rotation
-  sectorLeaders   Json
-  sectorLaggards  Json
-  
+  sectorLeaders  Json
+  sectorLaggards Json
+
   // Performance indexes
   @@index([timestamp])
   @@index([regime])
@@ -332,60 +334,60 @@ model MarketContext {
 }
 
 model OptionsPosition {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  tradeId         String   @unique
-  trade           Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  
+  tradeId String @unique
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
   // Basic position info
-  symbol          String
-  optionSymbol    String
-  strategy        Json     // OptionsStrategy object
-  
+  symbol       String
+  optionSymbol String
+  strategy     Json // OptionsStrategy object
+
   // Entry data
-  entryDate       DateTime
-  entryPrice      Float
-  contracts       Int
-  entryGreeks     Json     // Greeks at entry
-  entryIV         Float
-  
+  entryDate   DateTime
+  entryPrice  Float
+  contracts   Int
+  entryGreeks Json // Greeks at entry
+  entryIV     Float
+
   // Current data (updated by monitoring)
-  currentPrice    Float?
-  currentGreeks   Json?    // Current Greeks
-  currentIV       Float?
-  currentPnL      Float?
-  pnlPercent      Float?
-  
+  currentPrice  Float?
+  currentGreeks Json? // Current Greeks
+  currentIV     Float?
+  currentPnL    Float?
+  pnlPercent    Float?
+
   // Position details
-  strike          Float
-  expiration      DateTime
+  strike           Float
+  expiration       DateTime
   daysToExpiration Int?
-  optionType      String   // 'call' | 'put'
-  
+  optionType       String // 'call' | 'put'
+
   // Risk metrics
-  maxRisk         Float
-  maxProfit       Float?   // null for unlimited profit strategies
-  breakeven       Float?
-  
+  maxRisk   Float
+  maxProfit Float? // null for unlimited profit strategies
+  breakeven Float?
+
   // Exit tracking
-  target1Hit      Boolean  @default(false)
-  target2Hit      Boolean  @default(false)
-  target3Hit      Boolean  @default(false)
-  exitConditions  Json     @default("[]")
-  
+  target1Hit     Boolean @default(false)
+  target2Hit     Boolean @default(false)
+  target3Hit     Boolean @default(false)
+  exitConditions Json    @default("[]")
+
   // Metadata
-  tradierOrderId  String?
-  status          String   @default("OPEN") // 'OPEN', 'CLOSED', 'EXPIRED'
-  lastUpdated     DateTime @default(now())
-  
+  tradierOrderId String?
+  status         String   @default("OPEN") // 'OPEN', 'CLOSED', 'EXPIRED'
+  lastUpdated    DateTime @default(now())
+
   // Relations
   selectionRecord StrikeSelectionRecord?
   monitoringLogs  OptionsMonitoringLog[]
   exitEvents      ExitConditionEvent[]
-  
+
   // Performance indexes
   @@index([tradeId])
   @@index([symbol])
@@ -398,42 +400,42 @@ model OptionsPosition {
 }
 
 model StrikeSelectionRecord {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  tradeId         String   @unique
-  trade           Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  positionId      String   @unique
-  position        OptionsPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
-  
+  tradeId    String          @unique
+  trade      Trade           @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  positionId String          @unique
+  position   OptionsPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
   // Selection criteria
-  targetDelta     Float
-  actualDelta     Float
-  deltaDeviation  Float
-  
+  targetDelta    Float
+  actualDelta    Float
+  deltaDeviation Float
+
   // Market conditions at selection
   underlyingPrice Float
   ivRank          Float
   oscillatorValue Float
   signalQuality   Int
-  
+
   // Selection results
-  selectedStrike  Float
-  premium         Float
+  selectedStrike   Float
+  premium          Float
   daysToExpiration Int
-  
+
   // Performance tracking (updated when position closes)
-  finalPnL        Float?
-  holdingPeriod   Int?     // Minutes
-  maxDrawdown     Float?
-  
+  finalPnL      Float?
+  holdingPeriod Int? // Minutes
+  maxDrawdown   Float?
+
   // Analysis
   selectionAccuracy Float?
   performanceScore  Float?
-  lessons         Json     @default("[]")
-  
+  lessons           Json   @default("[]")
+
   // Performance indexes
   @@index([tradeId])
   @@index([performanceScore])
@@ -444,36 +446,36 @@ model StrikeSelectionRecord {
 }
 
 model OptionsMonitoringLog {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
   // Relations
-  positionId      String
-  position        OptionsPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
-  
+  positionId String
+  position   OptionsPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
   // Monitoring data snapshot
   timestamp       DateTime
   underlyingPrice Float
   optionPrice     Float
-  greeks          Json     // Current Greeks
+  greeks          Json // Current Greeks
   impliedVol      Float
-  
+
   // P&L breakdown
-  totalPnL        Float
-  intrinsicValue  Float
-  timeValue       Float
-  volatilityPnL   Float
-  thetaDecay      Float
-  deltaChange     Float
-  
+  totalPnL       Float
+  intrinsicValue Float
+  timeValue      Float
+  volatilityPnL  Float
+  thetaDecay     Float
+  deltaChange    Float
+
   // Risk metrics
   daysToExpiration Int
-  thetaDecayRate  Float
-  ivChange        Float
-  
+  thetaDecayRate   Float
+  ivChange         Float
+
   // Exit condition checks
   exitConditionsChecked Json @default("[]")
-  
+
   // Performance indexes
   @@index([positionId])
   @@index([timestamp])
@@ -482,31 +484,31 @@ model OptionsMonitoringLog {
 }
 
 model ExitConditionEvent {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
   // Relations
-  positionId      String
-  position        OptionsPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
-  
+  positionId String
+  position   OptionsPosition @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
   // Exit condition details
-  conditionType   String   // 'STOP_LOSS', 'PROFIT_TARGET_1', etc.
-  triggered       Boolean
-  value           Float
-  threshold       Float
-  description     String
-  
+  conditionType String // 'STOP_LOSS', 'PROFIT_TARGET_1', etc.
+  triggered     Boolean
+  value         Float
+  threshold     Float
+  description   String
+
   // Exit decision
-  shouldExit      Boolean
-  percentToClose  Float?
-  urgency         String   // 'LOW', 'MEDIUM', 'HIGH', 'IMMEDIATE'
-  reasoning       String
-  
+  shouldExit     Boolean
+  percentToClose Float?
+  urgency        String // 'LOW', 'MEDIUM', 'HIGH', 'IMMEDIATE'
+  reasoning      String
+
   // Execution tracking
-  executed        Boolean  @default(false)
+  executed        Boolean   @default(false)
   executedAt      DateTime?
   executionResult Json?
-  
+
   // Performance indexes
   @@index([positionId])
   @@index([conditionType])
@@ -517,48 +519,48 @@ model ExitConditionEvent {
 }
 
 model PerformanceAnalysis {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
   // Relations
-  tradeId         String   @unique
-  trade           Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  
+  tradeId String @unique
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
   // Final performance metrics
-  finalPnL        Float
-  pnlPercent      Float
-  rMultiple       Float
-  holdingPeriod   Int      // Minutes
-  
+  finalPnL      Float
+  pnlPercent    Float
+  rMultiple     Float
+  holdingPeriod Int // Minutes
+
   // Greeks breakdown
-  deltaPnL        Float
-  gammaPnL        Float
-  thetaPnL        Float
-  vegaPnL         Float
-  rhoPnL          Float
-  
+  deltaPnL Float
+  gammaPnL Float
+  thetaPnL Float
+  vegaPnL  Float
+  rhoPnL   Float
+
   // Selection accuracy
-  deltaAccuracy   Float    // How close was delta targeting
-  dteAccuracy     Float    // How close was DTE selection
-  ivAccuracy      Float    // How accurate was IV prediction
-  
+  deltaAccuracy Float // How close was delta targeting
+  dteAccuracy   Float // How close was DTE selection
+  ivAccuracy    Float // How accurate was IV prediction
+
   // Exit effectiveness
-  exitCondition   String   // Which condition triggered exit
-  exitTiming      String   // 'EARLY', 'OPTIMAL', 'LATE'
-  exitEffectiveness Float  // 0-1 score
-  
+  exitCondition     String // Which condition triggered exit
+  exitTiming        String // 'EARLY', 'OPTIMAL', 'LATE'
+  exitEffectiveness Float // 0-1 score
+
   // Market condition analysis
-  marketCondition Json     // Market conditions during trade
-  conditionMatch  Float    // How well did conditions match strategy
-  
+  marketCondition Json // Market conditions during trade
+  conditionMatch  Float // How well did conditions match strategy
+
   // Lessons learned
-  insights        Json     // Generated insights
-  improvements    Json     // Suggested improvements
-  
+  insights     Json // Generated insights
+  improvements Json // Suggested improvements
+
   // Applied to optimization
-  appliedToModel  Boolean  @default(false)
-  appliedAt       DateTime?
-  
+  appliedToModel Boolean   @default(false)
+  appliedAt      DateTime?
+
   // Performance indexes
   @@index([tradeId])
   @@index([finalPnL])
@@ -566,4 +568,121 @@ model PerformanceAnalysis {
   @@index([createdAt])
   @@index([appliedToModel])
   @@map("performance_analyses")
+}
+
+// Webhook Monitoring Models for Dashboard
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Request details
+  sourceIp    String
+  userAgent   String?
+  headers     Json
+  payload     Json
+  payloadSize Int
+  signature   String?
+
+  // Processing details
+  processingTime Int // milliseconds
+  status         String // 'success', 'failed', 'rejected'
+  errorMessage   String?
+  errorStack     String?
+
+  // Relations
+  signalId String?
+  signal   Signal? @relation(fields: [signalId], references: [id], onDelete: SetNull)
+
+  // Performance indexes
+  @@index([createdAt])
+  @@index([status])
+  @@index([sourceIp])
+  @@index([signalId])
+  @@index([status, createdAt])
+  @@index([sourceIp, createdAt])
+  @@map("webhook_logs")
+}
+
+model ProcessingStage {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  signalId String
+  signal   Signal @relation(fields: [signalId], references: [id], onDelete: Cascade)
+
+  stage        String // 'received', 'enriching', 'enriched', 'deciding', 'decided', 'executing', 'completed', 'failed'
+  startedAt    DateTime
+  completedAt  DateTime?
+  duration     Int? // milliseconds
+  status       String // 'in_progress', 'completed', 'failed'
+  errorMessage String?
+  metadata     Json? // Stage-specific data
+
+  // Performance indexes
+  @@index([signalId])
+  @@index([stage])
+  @@index([status])
+  @@index([startedAt])
+  @@index([signalId, stage])
+  @@index([status, startedAt])
+  @@index([stage, status])
+  @@map("processing_stages")
+}
+
+model SystemMetrics {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+
+  // Performance metrics
+  webhooksPerMinute Float
+  avgProcessingTime Float
+  errorRate         Float
+  queueDepth        Int
+
+  // System resources
+  memoryUsage   Float
+  cpuUsage      Float
+  dbConnections Int
+
+  // Business metrics
+  signalsProcessed  Int
+  tradesExecuted    Int
+  decisionsApproved Int
+  decisionsRejected Int
+
+  // Performance indexes
+  @@index([timestamp])
+  @@index([timestamp, errorRate])
+  @@index([timestamp, avgProcessingTime])
+  @@map("system_metrics")
+}
+
+model SystemAlert {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  severity String // 'info', 'warning', 'error', 'critical'
+  category String // 'webhook', 'processing', 'system', 'performance'
+  title    String
+  message  String
+  details  Json?
+
+  // Alert lifecycle
+  acknowledged   Boolean   @default(false)
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+  resolved       Boolean   @default(false)
+  resolvedAt     DateTime?
+
+  // Performance indexes
+  @@index([severity])
+  @@index([category])
+  @@index([acknowledged])
+  @@index([resolved])
+  @@index([createdAt])
+  @@index([severity, acknowledged])
+  @@index([category, resolved])
+  @@index([acknowledged, resolved])
+  @@map("system_alerts")
 }

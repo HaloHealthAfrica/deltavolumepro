@@ -54,6 +54,12 @@ export const CHANNELS = {
   POSITIONS: 'positions',
   NOTIFICATIONS: 'notifications',
   SYSTEM: 'system',
+  // Monitoring channels
+  MONITORING_WEBHOOKS: 'monitoring-webhooks',
+  MONITORING_STAGES: 'monitoring-stages',
+  MONITORING_ALERTS: 'monitoring-alerts',
+  MONITORING_METRICS: 'monitoring-metrics',
+  MONITORING_HEALTH: 'monitoring-health',
 } as const
 
 // Event names
@@ -81,7 +87,50 @@ export const EVENTS = {
   // System events
   SYSTEM_STATUS: 'system:status',
   SYSTEM_HEALTH: 'system:health',
+  
+  // Monitoring webhook events
+  WEBHOOK_RECEIVED: 'webhook:received',
+  WEBHOOK_PROCESSED: 'webhook:processed',
+  WEBHOOK_FAILED: 'webhook:failed',
+  
+  // Monitoring stage events
+  STAGE_STARTED: 'stage:started',
+  STAGE_COMPLETED: 'stage:completed',
+  STAGE_FAILED: 'stage:failed',
+  
+  // Monitoring alert events
+  ALERT_CREATED: 'alert:created',
+  ALERT_ACKNOWLEDGED: 'alert:acknowledged',
+  ALERT_RESOLVED: 'alert:resolved',
+  
+  // Monitoring metrics events
+  METRICS_UPDATED: 'metrics:updated',
+  
+  // Monitoring health events
+  HEALTH_CHANGED: 'health:changed',
 } as const
 
 export type Channel = typeof CHANNELS[keyof typeof CHANNELS]
 export type Event = typeof EVENTS[keyof typeof EVENTS]
+
+// Monitoring-specific channel type
+export type MonitoringChannel = 
+  | typeof CHANNELS.MONITORING_WEBHOOKS
+  | typeof CHANNELS.MONITORING_STAGES
+  | typeof CHANNELS.MONITORING_ALERTS
+  | typeof CHANNELS.MONITORING_METRICS
+  | typeof CHANNELS.MONITORING_HEALTH
+
+// Monitoring-specific event type
+export type MonitoringEvent =
+  | typeof EVENTS.WEBHOOK_RECEIVED
+  | typeof EVENTS.WEBHOOK_PROCESSED
+  | typeof EVENTS.WEBHOOK_FAILED
+  | typeof EVENTS.STAGE_STARTED
+  | typeof EVENTS.STAGE_COMPLETED
+  | typeof EVENTS.STAGE_FAILED
+  | typeof EVENTS.ALERT_CREATED
+  | typeof EVENTS.ALERT_ACKNOWLEDGED
+  | typeof EVENTS.ALERT_RESOLVED
+  | typeof EVENTS.METRICS_UPDATED
+  | typeof EVENTS.HEALTH_CHANGED
