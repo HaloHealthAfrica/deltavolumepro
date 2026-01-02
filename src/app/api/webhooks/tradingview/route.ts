@@ -354,14 +354,14 @@ async function recordWebhookRequest(
     
     const webhookRequest: CreateWebhookRequestInput = {
       sourceIp: clientIp,
-      userAgent: headers['user-agent'] || null,
+      userAgent: headers['user-agent'] || undefined,
       headers,
       payload: payload || {},
       payloadSize: payloadStr.length,
-      signature: headers['x-tradingview-signature'] || null,
+      signature: headers['x-tradingview-signature'] || undefined,
       processingTime: 0, // Will be updated later
       status,
-      errorMessage: errorMessage || null,
+      errorMessage: errorMessage || undefined,
     }
 
     return await monitor.recordWebhookRequest(webhookRequest)
