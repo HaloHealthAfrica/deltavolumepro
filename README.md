@@ -1,36 +1,238 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DeltaStackPro
 
-## Getting Started
+A comprehensive trading application that processes TradingView signals, enriches them with multi-source market data, makes intelligent trading decisions, and executes paper trades across multiple brokers while continuously learning and optimizing performance.
 
-First, run the development server:
+## Features
+
+### 🎯 Signal Processing
+- **TradingView Integration**: Secure webhook receiver with HMAC signature validation
+- **Real-time Processing**: Background job queue for signal processing
+- **Comprehensive Validation**: Multi-layer payload validation and error handling
+
+### 📊 Data Enrichment
+- **Multi-Source Data**: Integrates with Tradier, TwelveData, and Alpaca APIs
+- **Parallel Processing**: Concurrent data fetching with intelligent fallbacks
+- **Quality Scoring**: Data consistency validation and quality metrics
+
+### 🧠 Intelligent Decision Engine
+- **Weighted Scoring**: Configurable factor weights for decision making
+- **Risk Management**: Quality thresholds, volume pressure, and risk limits
+- **Instrument Selection**: Smart selection between stocks, options, and spreads
+- **Position Sizing**: Dynamic sizing based on signal quality and market conditions
+
+### 📈 Multi-Broker Paper Trading
+- **Simultaneous Execution**: Orders placed across multiple brokers
+- **Real-time Monitoring**: Live position tracking and P&L updates
+- **Exit Management**: Automated stop losses, targets, and trailing stops
+
+### 🤖 Learning Engine
+- **Performance Analysis**: Comprehensive trade analysis and classification
+- **Rule Optimization**: Continuous improvement of trading rules
+- **Backtesting**: Validation of new rules against historical data
+- **Insight Generation**: Automated improvement suggestions
+
+### 🖥️ User Interface
+- **Real-time Dashboard**: Live performance metrics and charts
+- **Signal Feed**: Real-time signal processing with decision reasoning
+- **Position Management**: Active trade monitoring and management
+- **Trade History**: Comprehensive trade analysis and filtering
+- **Configuration**: Interactive settings for rules and parameters
+
+### 🔒 Security & Performance
+- **Rate Limiting**: Comprehensive API protection
+- **Encryption**: AES-256 encryption for sensitive data
+- **Caching**: Intelligent caching with appropriate TTLs
+- **Monitoring**: Error tracking and performance metrics
+- **Authentication**: Secure user authentication with Clerk
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL database (for production) or SQLite (for development)
+- API keys for brokers (Tradier, TwelveData, Alpaca)
+- Clerk account for authentication
+- Pusher account for real-time updates
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd deltastackpro
+   npm install
+   ```
+
+2. **Configure environment**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your API keys and configuration
+   ```
+
+3. **Set up database**
+   ```bash
+   npx prisma migrate dev
+   npx prisma db seed
+   ```
+
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Visit the application**
+   Open http://localhost:3000
+
+## Architecture
+
+### Core Components
+
+- **Webhook Receiver** (`/api/webhooks/tradingview`): Processes TradingView signals
+- **Data Enrichment Engine**: Fetches and aggregates market data from multiple sources
+- **Decision Engine**: Evaluates signals and makes trading decisions
+- **Paper Trading System**: Executes and monitors trades across brokers
+- **Learning Engine**: Analyzes performance and optimizes rules
+- **Real-time Communication**: WebSocket updates via Pusher
+
+### Database Schema
+
+- **Signals**: Raw webhook data and processing status
+- **EnrichedData**: Aggregated market data and quality metrics
+- **Decisions**: Trading decisions with reasoning and confidence
+- **Trades**: Paper trade execution and performance tracking
+- **TradeAnalysis**: Detailed trade analysis and learning data
+- **TradingRules**: Configurable decision engine parameters
+
+### API Endpoints
+
+- `GET /api/health` - System health check
+- `POST /api/webhooks/tradingview` - TradingView webhook receiver
+- `GET /api/monitoring` - System metrics and monitoring
+- `GET /api/monitoring/errors` - Error tracking and statistics
+- `GET /api/settings/rules` - Trading rules configuration
+
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+### Vercel Deployment
+
+1. **Connect repository to Vercel**
+2. **Configure environment variables**
+3. **Set up PostgreSQL database**
+4. **Deploy**
+
+The application is optimized for Vercel's serverless environment with proper function timeouts and caching strategies.
+
+## Configuration
+
+### Trading Rules
+
+Configure decision engine parameters:
+- **Quality Weight**: Importance of signal quality (0-1)
+- **Volume Weight**: Importance of volume pressure (0-1)
+- **Oscillator Weight**: Importance of oscillator phase (0-1)
+- **Structure Weight**: Importance of structure alignment (0-1)
+- **Market Weight**: Importance of technical confirmation (0-1)
+
+### Risk Parameters
+
+- **Minimum Quality**: Required signal quality (1-5)
+- **Minimum Confidence**: Required decision confidence (0-1)
+- **Minimum Volume Pressure**: Required volume pressure (0-100)
+- **Maximum Risk**: Maximum account risk percentage (0-100)
+
+### Broker Configuration
+
+Configure API keys and settings for:
+- **Tradier**: Options data and execution
+- **TwelveData**: Technical indicators and market data
+- **Alpaca**: Market data and trade execution
+
+## Monitoring
+
+### System Health
+
+- **Database Connectivity**: Real-time database health checks
+- **Broker Connections**: API connectivity status
+- **Real-time Communication**: WebSocket connection status
+
+### Performance Metrics
+
+- **Signal Processing**: Volume and processing times
+- **Decision Engine**: Decision rates and confidence levels
+- **Trading Performance**: P&L, win rates, and risk metrics
+- **Error Tracking**: Error rates and resolution status
+
+### Alerts
+
+Critical errors trigger immediate alerts:
+- Database connectivity issues
+- Authentication failures
+- Trade execution errors
+- System performance degradation
+
+## Testing
+
+### Test Suite
+
+- **Unit Tests**: Component-level testing
+- **Integration Tests**: End-to-end workflow validation
+- **Property Tests**: Universal correctness properties
+
+### Running Tests
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Run all tests
+npm test
+
+# Run specific test suites
+npm run test:unit
+npm run test:integration
+npm run test:property
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Development
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/                 # Next.js app router
+│   ├── api/            # API routes
+│   └── (pages)/        # UI pages
+├── components/         # React components
+├── lib/               # Core business logic
+│   ├── api-clients/   # External API clients
+│   ├── realtime/      # WebSocket communication
+│   └── *.ts           # Core modules
+└── test/              # Test suites
+```
 
-## Learn More
+### Key Modules
 
-To learn more about Next.js, take a look at the following resources:
+- **webhook-utils.ts**: Webhook validation and parsing
+- **data-enrichment.ts**: Multi-source data aggregation
+- **decision-engine.ts**: Trading decision logic
+- **paper-trading.ts**: Trade execution and monitoring
+- **learning-engine.ts**: Performance analysis and optimization
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contributing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+[License information]
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Support
+
+For questions and support:
+- Check the [deployment guide](./DEPLOYMENT.md)
+- Review the monitoring endpoints
+- Open an issue in the repository
