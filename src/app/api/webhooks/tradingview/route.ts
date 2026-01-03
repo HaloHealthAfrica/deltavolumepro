@@ -364,9 +364,12 @@ async function recordWebhookRequest(
       errorMessage: errorMessage || undefined,
     }
 
-    return await monitor.recordWebhookRequest(webhookRequest)
+    const result = await monitor.recordWebhookRequest(webhookRequest)
+    console.log('[Webhook] Successfully recorded webhook:', result.id)
+    return result
   } catch (error) {
-    // Don't throw - monitoring failures shouldn't break webhook processing
+    // Log the error for debugging but don't throw
+    console.error('[Webhook] Failed to record webhook request:', error)
     return null
   }
 }
