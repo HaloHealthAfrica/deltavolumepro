@@ -8,8 +8,60 @@ export * from './trading';
 // Export all API response types
 export * from './api';
 
-// Export all monitoring types
-export * from './monitoring';
+// Export monitoring types (excluding PerformanceMetrics to avoid conflict with trading.ts)
+export type {
+  WebhookRequest,
+  ProcessingStage,
+  SystemMetrics,
+  SystemAlert,
+  WebhookEvent,
+  SystemHealth,
+  MonitoringFilters,
+  RealTimeMetrics,
+  PipelineStatus,
+  WebhookStatus,
+  ProcessingStageType,
+  ProcessingStageStatus,
+  AlertSeverity,
+  AlertCategory,
+  WebhookEventType,
+  SystemHealthStatus,
+  TimeRange,
+  TrendDirection,
+  WebhookEventData,
+  DatabaseHealth,
+  ApiHealth,
+  MemoryHealth,
+  QueueHealth,
+  ErrorSummary,
+  MonitoringPaginatedResponse,
+  DashboardWidget,
+  DashboardWidgetType,
+  DashboardLayout,
+  CreateWebhookRequestInput,
+  UpdateWebhookRequestInput,
+  CreateProcessingStageInput,
+  UpdateProcessingStageInput,
+  CreateSystemAlertInput,
+  UpdateSystemAlertInput,
+  WebhookRequestWithRelations,
+  TimeSeriesDataPoint,
+  ChartData,
+} from './monitoring';
+// Re-export monitoring PerformanceMetrics with alias
+export type { PerformanceMetrics as MonitoringPerformanceMetrics } from './monitoring';
+// Re-export monitoring constants
+export {
+  DEFAULT_PAGINATION,
+  TIME_RANGES,
+  ALERT_SEVERITY_PRIORITY,
+  PROCESSING_STAGE_ORDER,
+  REFRESH_INTERVALS,
+  isValidWebhookStatus,
+  isValidProcessingStageType,
+  isValidAlertSeverity,
+  isValidSystemHealthStatus,
+} from './monitoring';
 
 // Export all options trading types (excluding StrikeSelection to avoid conflict with trading.ts)
 export type {

@@ -108,30 +108,34 @@ export const monitoringRouter = createTRPCRouter({
       const now = new Date();
       
       // Check database
-      let database = { status: 'healthy' as const, latency: 0 };
+      let dbStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+      let dbLatency = 0;
       const dbStart = Date.now();
       try {
         await prisma.$queryRaw`SELECT 1`;
-        database.latency = Date.now() - dbStart;
-        if (database.latency > 1000) {
-          database = { status: 'degraded', latency: database.latency };
+        dbLatency = Date.now() - dbStart;
+        if (dbLatency > 1000) {
+          dbStatus = 'degraded';
         }
       } catch {
-        database = { status: 'unhealthy', latency: 0 };
+        dbStatus = 'unhealthy';
       }
+      const database = { status: dbStatus, latency: dbLatency };
 
       // Check memory
       const memoryUsage = process.memoryUsage();
       const memoryPercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
+      const memoryStatus: 'healthy' | 'degraded' | 'unhealthy' = memoryPercent > 90 ? 'unhealthy' : memoryPercent > 75 ? 'degraded' : 'healthy';
       const memory = {
-        status: memoryPercent > 90 ? 'unhealthy' as const : memoryPercent > 75 ? 'degraded' as const : 'healthy' as const,
+        status: memoryStatus,
         usagePercent: memoryPercent
       };
 
       // Check queue
       const activeStages = await prisma.processingStage.count({ where: { status: 'in_progress' } });
+      const queueStatus: 'healthy' | 'degraded' | 'unhealthy' = activeStages > 100 ? 'degraded' : 'healthy';
       const queue = {
-        status: activeStages > 100 ? 'degraded' as const : 'healthy' as const,
+        status: queueStatus,
         depth: activeStages
       };
 
@@ -199,8 +203,8 @@ export const monitoringRouter = createTRPCRouter({
           outcome: d.decision === 'APPROVE' ? 'approved' : 'rejected',
           confidenceScore: d.confidence,
           threshold: 0.7,
-          factors: d.factors as any[] || [],
-          rejectionReasons: d.rejectionReasons as string[] || [],
+          factors: [],
+          rejectionReasons: [],
           createdAt: d.createdAt,
         })),
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
@@ -246,7 +250,7 @@ export const monitoringRouter = createTRPCRouter({
         data: {
           acknowledged: true,
           acknowledgedAt: new Date(),
-          acknowledgedBy: ctx.userId,
+          acknowledgedBy: ctx.session?.userId || 'system',
         },
       });
       return alert;

@@ -39,6 +39,8 @@ import type {
   CreateProcessingStageInput,
   UpdateProcessingStageInput,
   WebhookRequestWithRelations,
+} from '@/lib/monitoring'
+import {
   ValidationError,
   NotFoundError,
   ConflictError,
@@ -217,8 +219,12 @@ export class WebhookMonitor implements IWebhookMonitor {
 
       const webhook = this.mapWebhookLogToRequest(webhookLog) as WebhookRequestWithRelations
 
-      if (includeRelations && webhookLog.signal) {
-        webhook.signal = webhookLog.signal
+      if (includeRelations) {
+        // Type assertion for the included signal
+        const webhookWithSignal = webhookLog as typeof webhookLog & { signal?: { id: string; ticker: string; action: string; quality: number; status: string } | null }
+        if (webhookWithSignal.signal) {
+          webhook.signal = webhookWithSignal.signal
+        }
         
         // Fetch processing stages if signal exists
         if (webhookLog.signalId) {
@@ -447,7 +453,7 @@ export class WebhookMonitor implements IWebhookMonitor {
           duration: stage.duration || null,
           status: stage.status,
           errorMessage: stage.errorMessage || null,
-          metadata: stage.metadata || null,
+          metadata: stage.metadata ?? undefined,
         },
       })
 
@@ -520,6 +526,13 @@ export class WebhookMonitor implements IWebhookMonitor {
       const duration = completedAt.getTime() - existing.startedAt.getTime()
 
       // Update processing stage
+      const existingMetadata = existing.metadata && typeof existing.metadata === 'object' && !Array.isArray(existing.metadata) 
+        ? existing.metadata as Record<string, unknown>
+        : {}
+      const updatedMetadata = metadata 
+        ? { ...existingMetadata, ...metadata }
+        : (existing.metadata ?? undefined)
+        
       const updated = await prisma.processingStage.update({
         where: { id },
         data: {
@@ -527,7 +540,7 @@ export class WebhookMonitor implements IWebhookMonitor {
           completedAt,
           duration,
           errorMessage: errorMessage || null,
-          metadata: metadata ? { ...existing.metadata, ...metadata } : existing.metadata,
+          metadata: updatedMetadata,
         },
       })
 

@@ -134,6 +134,10 @@ describe('Webhook Monitoring Integration', () => {
       status: 'completed',
       startedAt: new Date(),
       createdAt: new Date(),
+      completedAt: null,
+      duration: null,
+      errorMessage: null,
+      metadata: null,
     })
     vi.mocked(prisma.processingStage.findFirst).mockResolvedValue(null)
   })
@@ -359,7 +363,7 @@ describe('Webhook Monitoring Integration', () => {
         allowed: false,
         retryAfter: 60,
         remaining: 0,
-        resetTime: Date.now() + 60000,
+        resetAt: Date.now() + 60000,
       })
 
       const request = new NextRequest('http://localhost:3000/api/webhooks/tradingview', {

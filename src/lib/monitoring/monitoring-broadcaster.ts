@@ -324,7 +324,7 @@ export class MonitoringBroadcaster {
   async broadcastAlertCreated(alert: SystemAlert): Promise<BroadcastResult> {
     const payload: AlertEventPayload = {
       alertId: alert.id,
-      type: alert.type,
+      type: alert.title,
       severity: alert.severity,
       message: alert.message,
       category: alert.category,
@@ -350,7 +350,7 @@ export class MonitoringBroadcaster {
   async broadcastAlertAcknowledged(alert: SystemAlert): Promise<BroadcastResult> {
     const payload: AlertEventPayload = {
       alertId: alert.id,
-      type: alert.type,
+      type: alert.title,
       severity: alert.severity,
       message: alert.message,
       category: alert.category,
@@ -377,7 +377,7 @@ export class MonitoringBroadcaster {
   async broadcastAlertResolved(alert: SystemAlert): Promise<BroadcastResult> {
     const payload: AlertEventPayload = {
       alertId: alert.id,
-      type: alert.type,
+      type: alert.title,
       severity: alert.severity,
       message: alert.message,
       category: alert.category,
@@ -407,12 +407,12 @@ export class MonitoringBroadcaster {
    */
   async broadcastMetricsUpdate(metrics: SystemMetrics): Promise<BroadcastResult> {
     const payload: MetricsUpdatePayload = {
-      webhookVolume: metrics.webhookVolume,
-      successRate: metrics.successRate,
+      webhookVolume: metrics.webhooksPerMinute,
+      successRate: 100 - metrics.errorRate,
       avgProcessingTime: metrics.avgProcessingTime,
       errorRate: metrics.errorRate,
       queueDepth: metrics.queueDepth,
-      activeStages: metrics.activeStages,
+      activeStages: 0, // Not tracked in SystemMetrics
       memoryUsage: metrics.memoryUsage,
       cpuUsage: metrics.cpuUsage,
       timestamp: new Date(),
@@ -459,22 +459,29 @@ export class MonitoringBroadcaster {
    * @returns Promise resolving to broadcast result
    */
   async broadcastHealthUpdate(health: SystemHealth): Promise<BroadcastResult> {
+    // Get first external API status if available
+    const firstApiKey = Object.keys(health.externalApis)[0]
+    const firstApi = firstApiKey ? health.externalApis[firstApiKey] : null
+    
     const payload: HealthUpdatePayload = {
       status: health.status,
       database: {
         status: health.database.status,
         latency: health.database.latency,
       },
-      api: {
-        status: health.api.status,
-        latency: health.api.latency,
+      api: firstApi ? {
+        status: firstApi.status,
+        latency: firstApi.latency,
+      } : {
+        status: 'unknown',
+        latency: 0,
       },
       memory: {
-        status: health.memory.status,
-        usagePercent: health.memory.usagePercent,
+        status: health.memory.percentage > 90 ? 'unhealthy' : health.memory.percentage > 75 ? 'degraded' : 'healthy',
+        usagePercent: health.memory.percentage,
       },
       queue: {
-        status: health.queue.status,
+        status: health.queue.utilization > 90 ? 'unhealthy' : health.queue.utilization > 75 ? 'degraded' : 'healthy',
         depth: health.queue.depth,
       },
       lastCheck: health.lastCheck,
@@ -502,13 +509,17 @@ export class MonitoringBroadcaster {
     currentStatus: string,
     health: SystemHealth
   ): Promise<BroadcastResult> {
+    // Get first external API status if available
+    const firstApiKey = Object.keys(health.externalApis)[0]
+    const firstApi = firstApiKey ? health.externalApis[firstApiKey] : null
+    
     const payload = {
       previousStatus,
       currentStatus,
       health: {
         status: health.status,
         database: health.database,
-        api: health.api,
+        api: firstApi || { status: 'unknown', latency: 0 },
         memory: health.memory,
         queue: health.queue,
         lastCheck: health.lastCheck,

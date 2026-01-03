@@ -938,9 +938,12 @@ export class MetricsCollector implements IMetricsCollector {
 
     if (timeRange === 'custom' && customStart) {
       startDate = customStart
-    } else {
-      const rangeSeconds = TIME_RANGES[timeRange] || TIME_RANGES.last_24_hours
+    } else if (timeRange !== 'custom') {
+      const rangeSeconds = TIME_RANGES[timeRange]
       startDate = new Date(endDate.getTime() - rangeSeconds * 1000)
+    } else {
+      // Default to last 24 hours if custom but no start date provided
+      startDate = new Date(endDate.getTime() - TIME_RANGES.last_24_hours * 1000)
     }
 
     return { startDate, endDate }
