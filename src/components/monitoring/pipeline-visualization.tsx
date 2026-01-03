@@ -6,21 +6,24 @@ import { useProcessingStages } from '@/hooks/useMonitoringEvents'
 import type { ProcessingStage, ProcessingStageType } from '@/types/monitoring'
 
 const STAGE_ORDER: ProcessingStageType[] = [
-  'webhook_received',
-  'validation',
-  'signal_creation',
-  'decision_engine',
-  'trade_execution',
-  'notification',
+  'received',
+  'enriching',
+  'enriched',
+  'deciding',
+  'decided',
+  'executing',
+  'completed',
 ]
 
 const STAGE_LABELS: Record<ProcessingStageType, string> = {
-  webhook_received: 'Webhook Received',
-  validation: 'Validation',
-  signal_creation: 'Signal Creation',
-  decision_engine: 'Decision Engine',
-  trade_execution: 'Trade Execution',
-  notification: 'Notification',
+  received: 'Received',
+  enriching: 'Enriching',
+  enriched: 'Enriched',
+  deciding: 'Deciding',
+  decided: 'Decided',
+  executing: 'Executing',
+  completed: 'Completed',
+  failed: 'Failed',
 }
 
 interface PipelineItemProps {
