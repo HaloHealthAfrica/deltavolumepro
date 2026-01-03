@@ -416,7 +416,7 @@ async function updateWebhookStatus(
   try {
     await monitor.updateWebhookRequest(webhookId, {
       status,
-      errorMessage: errorMessage || null,
+      errorMessage: errorMessage || undefined,
     })
   } catch (error) {
     // Don't throw - monitoring failures shouldn't break webhook processing
@@ -457,8 +457,8 @@ async function updateWebhookFinal(
     await monitor.updateWebhookRequest(webhookId, {
       processingTime,
       status,
-      errorMessage: errorMessage || null,
-      errorStack: errorStack || null,
+      errorMessage: errorMessage || undefined,
+      errorStack: errorStack || undefined,
     })
   } catch (error) {
     // Don't throw - monitoring failures shouldn't break webhook processing
