@@ -12,8 +12,8 @@ interface MetricCard {
   trend?: string
 }
 
-interface ApiMetrics {
-  webhookVolume: number
+interface NormalizedMetrics {
+  webhooksPerMinute: number
   successRate: number
   avgProcessingTime: number
   errorRate: number
@@ -24,7 +24,7 @@ interface ApiMetrics {
 
 export function MonitoringMetricsCards() {
   const { metrics: realtimeMetrics, isLoading: rtLoading, isConnected, lastUpdated } = useSystemMetrics()
-  const [apiMetrics, setApiMetrics] = useState<ApiMetrics | null>(null)
+  const [apiMetrics, setApiMetrics] = useState<NormalizedMetrics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch metrics from API
@@ -33,7 +33,16 @@ export function MonitoringMetricsCards() {
       const res = await fetch('/api/monitoring/metrics')
       if (res.ok) {
         const data = await res.json()
-        setApiMetrics(data)
+        // Normalize API response to match our interface
+        setApiMetrics({
+          webhooksPerMinute: data.webhookVolume || data.webhooksPerMinute || 0,
+          successRate: data.successRate || (100 - (data.errorRate || 0)),
+          avgProcessingTime: data.avgProcessingTime || 0,
+          errorRate: data.errorRate || 0,
+          queueDepth: data.queueDepth || 0,
+          activeStages: data.activeStages || 0,
+          memoryUsage: data.memoryUsage,
+        })
       }
     } catch (error) {
       console.error('Failed to fetch metrics:', error)
@@ -49,13 +58,24 @@ export function MonitoringMetricsCards() {
     return () => clearInterval(interval)
   }, [fetchMetrics])
 
+  // Normalize realtime metrics to match our interface
+  const normalizedRealtimeMetrics: NormalizedMetrics | null = realtimeMetrics ? {
+    webhooksPerMinute: realtimeMetrics.webhooksPerMinute || 0,
+    successRate: 100 - (realtimeMetrics.errorRate || 0),
+    avgProcessingTime: realtimeMetrics.avgProcessingTime || 0,
+    errorRate: realtimeMetrics.errorRate || 0,
+    queueDepth: realtimeMetrics.queueDepth || 0,
+    activeStages: 0, // Not in SystemMetrics
+    memoryUsage: realtimeMetrics.memoryUsage,
+  } : null
+
   // Use realtime metrics if available, otherwise use API metrics
-  const metrics = realtimeMetrics || apiMetrics
+  const metrics = normalizedRealtimeMetrics || apiMetrics
 
   const displayMetrics: MetricCard[] = metrics ? [
     {
       title: 'Webhooks/min',
-      value: (metrics.webhookVolume || 0).toString(),
+      value: (metrics.webhooksPerMinute || 0).toString(),
       icon: '📡',
       change: null,
     },
