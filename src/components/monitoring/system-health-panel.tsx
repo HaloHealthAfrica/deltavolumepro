@@ -53,6 +53,18 @@ export function SystemHealthPanel() {
   // Normalize health data from different sources
   const normalizeHealth = (): NormalizedHealth | null => {
     if (realtimeHealth) {
+      // Derive status from percentage/utilization values
+      const getMemoryStatus = (percentage: number): string => {
+        if (percentage > 90) return 'unhealthy'
+        if (percentage > 75) return 'degraded'
+        return 'healthy'
+      }
+      const getQueueStatus = (utilization: number): string => {
+        if (utilization > 90) return 'unhealthy'
+        if (utilization > 75) return 'degraded'
+        return 'healthy'
+      }
+      
       return {
         status: realtimeHealth.status,
         database: realtimeHealth.database ? {
@@ -61,11 +73,11 @@ export function SystemHealthPanel() {
         } : undefined,
         api: undefined, // SystemHealth uses externalApis, not api
         memory: realtimeHealth.memory ? {
-          status: realtimeHealth.memory.status,
-          usagePercent: realtimeHealth.memory.usedPercent
+          status: getMemoryStatus(realtimeHealth.memory.percentage),
+          usagePercent: realtimeHealth.memory.percentage
         } : undefined,
         queue: realtimeHealth.queue ? {
-          status: realtimeHealth.queue.status,
+          status: getQueueStatus(realtimeHealth.queue.utilization),
           depth: realtimeHealth.queue.depth
         } : undefined,
         lastCheck: realtimeHealth.lastCheck
