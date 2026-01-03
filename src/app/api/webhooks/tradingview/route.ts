@@ -364,12 +364,18 @@ async function recordWebhookRequest(
       errorMessage: errorMessage || undefined,
     }
 
+    console.log('[Webhook] Recording webhook request:', { sourceIp: clientIp, status, payloadSize: payloadStr.length })
     const result = await monitor.recordWebhookRequest(webhookRequest)
     console.log('[Webhook] Successfully recorded webhook:', result.id)
     return result
   } catch (error) {
-    // Log the error for debugging but don't throw
-    console.error('[Webhook] Failed to record webhook request:', error)
+    // Log the full error for debugging
+    console.error('[Webhook] Failed to record webhook request:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      sourceIp: clientIp,
+      status,
+    })
     return null
   }
 }

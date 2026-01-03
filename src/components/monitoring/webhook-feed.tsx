@@ -12,9 +12,16 @@ interface WebhookItem {
   processingTime?: number
   payloadSize?: number
   ticker?: string
+  action?: string
+  quality?: number
+  entryPrice?: number
+  stopLoss?: number
+  target1?: number
+  signalStatus?: string
   signalId?: string
   errorMessage?: string
   createdAt: Date
+  payload?: Record<string, any>
 }
 
 export function WebhookFeed() {
@@ -52,7 +59,7 @@ export function WebhookFeed() {
   }, [fetchWebhooks])
 
   // Merge realtime and API webhooks, preferring realtime
-  const mergedWebhooks = [...realtimeWebhooks.map(w => ({
+  const mergedWebhooks: WebhookItem[] = [...realtimeWebhooks.map(w => ({
     id: w.webhook.id,
     sourceIp: w.webhook.sourceIp,
     status: w.webhook.status,
@@ -61,6 +68,15 @@ export function WebhookFeed() {
     signalId: w.webhook.signalId,
     errorMessage: w.webhook.errorMessage,
     createdAt: new Date(w.timestamp),
+    // These may not be available in realtime, will be filled from API
+    ticker: undefined,
+    action: undefined,
+    quality: undefined,
+    entryPrice: undefined,
+    stopLoss: undefined,
+    target1: undefined,
+    signalStatus: undefined,
+    payload: undefined,
   })), ...apiWebhooks.filter(aw => !realtimeWebhooks.some(rw => rw.webhook.id === aw.id))]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 100)
@@ -146,37 +162,122 @@ export function WebhookFeed() {
                     <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(item.status)}`}>
                       {item.status}
                     </span>
-                    <span className="font-mono text-sm">{item.sourceIp}</span>
-                    {item.signalId && (
-                      <span className="text-blue-600 text-sm">
-                        Signal: {item.signalId.slice(0, 8)}...
+                    {item.ticker && (
+                      <span className="font-bold text-sm">{item.ticker}</span>
+                    )}
+                    {item.action && (
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        item.action.includes('LONG') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {item.action}
                       </span>
                     )}
+                    {item.quality && (
+                      <span className="text-xs text-gray-500">Q{item.quality}</span>
+                    )}
+                    <span className="font-mono text-xs text-gray-400">{item.sourceIp}</span>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-500">
                     {item.processingTime && (
-                      <span>{item.processingTime}ms</span>
+                      <span className="text-xs">{item.processingTime}ms</span>
                     )}
-                    <span>{item.createdAt.toLocaleTimeString()}</span>
+                    <span className="text-xs">{item.createdAt.toLocaleTimeString()}</span>
                   </div>
                 </div>
                 
                 {/* Expanded details */}
                 {expandedId === item.id && (
-                  <div className="mt-3 pt-3 border-t text-sm space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-gray-500">Payload Size:</span>{' '}
-                        <span>{item.payloadSize || 0} bytes</span>
+                  <div className="mt-3 pt-3 border-t text-sm space-y-3">
+                    {/* Signal Info */}
+                    {(item.ticker || item.signalId) && (
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <div className="font-medium text-blue-800 mb-2">📊 Signal Details</div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                          {item.ticker && (
+                            <div>
+                              <span className="text-gray-500">Ticker:</span>{' '}
+                              <span className="font-medium">{item.ticker}</span>
+                            </div>
+                          )}
+                          {item.action && (
+                            <div>
+                              <span className="text-gray-500">Action:</span>{' '}
+                              <span className={`font-medium ${item.action.includes('LONG') ? 'text-green-600' : 'text-red-600'}`}>
+                                {item.action}
+                              </span>
+                            </div>
+                          )}
+                          {item.quality && (
+                            <div>
+                              <span className="text-gray-500">Quality:</span>{' '}
+                              <span className="font-medium">{item.quality}/5</span>
+                            </div>
+                          )}
+                          {item.signalStatus && (
+                            <div>
+                              <span className="text-gray-500">Status:</span>{' '}
+                              <span className="font-medium">{item.signalStatus}</span>
+                            </div>
+                          )}
+                        </div>
+                        {(item.entryPrice || item.stopLoss || item.target1) && (
+                          <div className="grid grid-cols-3 gap-2 text-xs mt-2 pt-2 border-t border-blue-200">
+                            {item.entryPrice && (
+                              <div>
+                                <span className="text-gray-500">Entry:</span>{' '}
+                                <span className="font-medium">${item.entryPrice.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {item.stopLoss && (
+                              <div>
+                                <span className="text-gray-500">Stop:</span>{' '}
+                                <span className="font-medium text-red-600">${item.stopLoss.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {item.target1 && (
+                              <div>
+                                <span className="text-gray-500">Target:</span>{' '}
+                                <span className="font-medium text-green-600">${item.target1.toFixed(2)}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {item.signalId && (
+                          <div className="text-xs text-gray-400 mt-2">
+                            Signal ID: {item.signalId}
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <span className="text-gray-500">Processing Time:</span>{' '}
-                        <span>{item.processingTime || 0}ms</span>
+                    )}
+
+                    {/* Request Info */}
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="font-medium text-gray-700 mb-2">🌐 Request Details</div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        <div>
+                          <span className="text-gray-500">Source IP:</span>{' '}
+                          <span className="font-mono">{item.sourceIp}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Payload Size:</span>{' '}
+                          <span>{item.payloadSize || 0} bytes</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Processing:</span>{' '}
+                          <span>{item.processingTime || 0}ms</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Time:</span>{' '}
+                          <span>{item.createdAt.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Error Message */}
                     {item.errorMessage && (
-                      <div className="bg-red-50 p-2 rounded text-red-700">
-                        <span className="font-medium">Error:</span> {item.errorMessage}
+                      <div className="bg-red-50 p-3 rounded-lg">
+                        <div className="font-medium text-red-700 mb-1">❌ Error</div>
+                        <div className="text-red-600 text-xs">{item.errorMessage}</div>
                       </div>
                     )}
                   </div>

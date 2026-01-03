@@ -248,19 +248,20 @@ const BASE_RECONNECT_DELAY = 1000
 /**
  * Parse date strings in event payloads to Date objects
  */
-function parsePayload<T>(data: T): T {
+function parsePayload<T extends object>(data: T): T {
   if (!data || typeof data !== 'object') return data
   
-  const parsed = { ...data } as Record<string, unknown>
-  const dateFields = ['timestamp', 'createdAt', 'startedAt', 'completedAt', 'acknowledgedAt', 'resolvedAt', 'lastCheck']
+  const parsed = { ...data } as { [K in keyof T]: T[K] }
+  const dateFields = ['timestamp', 'createdAt', 'startedAt', 'completedAt', 'acknowledgedAt', 'resolvedAt', 'lastCheck'] as const
   
   for (const field of dateFields) {
-    if (parsed[field] && typeof parsed[field] === 'string') {
-      parsed[field] = new Date(parsed[field] as string)
+    const key = field as keyof T
+    if (key in parsed && typeof parsed[key] === 'string') {
+      (parsed as Record<string, unknown>)[field] = new Date(parsed[key] as string)
     }
   }
   
-  return parsed as T
+  return parsed
 }
 
 /**

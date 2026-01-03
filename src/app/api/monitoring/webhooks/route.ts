@@ -50,6 +50,10 @@ export async function GET(request: NextRequest) {
               ticker: true,
               action: true,
               status: true,
+              quality: true,
+              entryPrice: true,
+              stopLoss: true,
+              target1: true,
             }
           }
         }
@@ -58,17 +62,33 @@ export async function GET(request: NextRequest) {
     ])
 
     return NextResponse.json({
-      data: webhooks.map(w => ({
-        id: w.id,
-        sourceIp: w.sourceIp,
-        status: w.status,
-        processingTime: w.processingTime,
-        payloadSize: w.payloadSize,
-        signalId: w.signalId,
-        ticker: w.signal?.ticker,
-        errorMessage: w.errorMessage,
-        createdAt: w.createdAt,
-      })),
+      data: webhooks.map(w => {
+        // Extract key info from payload
+        const payload = w.payload as Record<string, any> || {}
+        
+        return {
+          id: w.id,
+          sourceIp: w.sourceIp,
+          status: w.status,
+          processingTime: w.processingTime,
+          payloadSize: w.payloadSize,
+          signalId: w.signalId,
+          // Signal details
+          ticker: w.signal?.ticker || payload.ticker,
+          action: w.signal?.action || payload.action,
+          quality: w.signal?.quality || payload.quality,
+          entryPrice: w.signal?.entryPrice || payload.price?.entry,
+          stopLoss: w.signal?.stopLoss || payload.suggested_levels?.stop_loss,
+          target1: w.signal?.target1 || payload.suggested_levels?.target_1,
+          signalStatus: w.signal?.status,
+          // Error info
+          errorMessage: w.errorMessage,
+          // Timestamps
+          createdAt: w.createdAt,
+          // Raw payload for detailed view
+          payload: payload,
+        }
+      }),
       pagination: {
         page,
         limit,
