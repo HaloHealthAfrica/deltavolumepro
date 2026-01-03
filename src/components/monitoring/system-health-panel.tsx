@@ -6,11 +6,20 @@ import { useSystemHealth, useSystemAlerts } from '@/hooks/useMonitoringEvents'
 
 interface HealthData {
   status: string
-  database: { status: string; latency?: number }
-  api: { status: string; latency?: number }
-  memory: { status: string; usagePercent?: number }
-  queue: { status: string; depth?: number }
-  lastCheck: string
+  database?: { status: string; latency?: number }
+  api?: { status: string; latency?: number }
+  memory?: { status: string; usagePercent?: number }
+  queue?: { status: string; depth?: number }
+  lastCheck?: string
+}
+
+interface NormalizedHealth {
+  status: string
+  database?: { status: string; latency?: number }
+  api?: { status: string; latency?: number }
+  memory?: { status: string; usagePercent?: number }
+  queue?: { status: string; depth?: number }
+  lastCheck?: Date
 }
 
 export function SystemHealthPanel() {
@@ -41,8 +50,41 @@ export function SystemHealthPanel() {
     return () => clearInterval(interval)
   }, [fetchHealth])
 
-  // Use realtime health if available, otherwise use API health
-  const health = realtimeHealth || apiHealth
+  // Normalize health data from different sources
+  const normalizeHealth = (): NormalizedHealth | null => {
+    if (realtimeHealth) {
+      return {
+        status: realtimeHealth.status,
+        database: realtimeHealth.database ? {
+          status: realtimeHealth.database.status,
+          latency: realtimeHealth.database.latency
+        } : undefined,
+        api: undefined, // SystemHealth uses externalApis, not api
+        memory: realtimeHealth.memory ? {
+          status: realtimeHealth.memory.status,
+          usagePercent: realtimeHealth.memory.usedPercent
+        } : undefined,
+        queue: realtimeHealth.queue ? {
+          status: realtimeHealth.queue.status,
+          depth: realtimeHealth.queue.depth
+        } : undefined,
+        lastCheck: realtimeHealth.lastCheck
+      }
+    }
+    if (apiHealth) {
+      return {
+        status: apiHealth.status,
+        database: apiHealth.database,
+        api: apiHealth.api,
+        memory: apiHealth.memory,
+        queue: apiHealth.queue,
+        lastCheck: apiHealth.lastCheck ? new Date(apiHealth.lastCheck) : undefined
+      }
+    }
+    return null
+  }
+
+  const health = normalizeHealth()
 
   const getStatusColor = (status?: string) => {
     switch (status) {
@@ -99,7 +141,7 @@ export function SystemHealthPanel() {
     },
   ]
 
-  const healthLastUpdated = lastUpdated || (apiHealth?.lastCheck ? new Date(apiHealth.lastCheck) : null)
+  const healthLastUpdated = lastUpdated || health?.lastCheck || null
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
